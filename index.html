@@ -4,35 +4,169 @@
 <meta charset="UTF-8">
 <title>国名スプリントシャウト・ソルバー</title>
 <style>
-body { font-family: sans-serif; padding: 20px; }
-input { font-size: 20px; width: 300px; }
-button { font-size: 18px; }
-pre { background: #f0f0f0; padding: 10px; white-space: pre-wrap; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 20px;
+    background: #fafafa;
+    color: #333;
+    max-width: 600px;
+    margin: auto;
+    transition: 0.3s;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    transition: 0.3s;
+}
+
+input[type="text"] {
+    width: 100%;
+    font-size: 22px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border: none;
+    border-radius: 8px;
+    background: #007aff;
+    color: white;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+.dict-select {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.dict-option {
+    flex: 1;
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: 0.3s;
+}
+
+.dict-option input {
+    margin-right: 6px;
+}
+
+.dict-option.selected {
+    border-color: #007aff;
+    background: #e8f0ff;
+}
+
+.switch {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+pre {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    border: 1px solid #ddd;
+    transition: 0.3s;
+}
+
+/* 🌙 ダークモード（OS設定を尊重） */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #111;
+        color: #fff;
+    }
+    .card {
+        background: #1e1e1e;
+        box-shadow: 0 2px 6px rgba(255,255,255,0.05);
+    }
+    input[type="text"] {
+        background: #2a2a2a;
+        border: 1px solid #555;
+        color: #fff;
+    }
+    .dict-option {
+        background: #2a2a2a;
+        color: #fff;
+    }
+    .dict-option.selected {
+        background: #003f7f;
+        border-color: #4da3ff;
+    }
+    pre {
+        background: #222;
+        border-color: #444;
+        color: #fff;
+    }
+}
 </style>
 </head>
 <body>
 
 <h2>国名スプリントシャウト・ソルバー</h2>
 
-<input id="pattern" placeholder="例：〇メ〇〇 / 1〇1〇">
-
-<div>
-  <label><input type="radio" name="dict" value="country" checked> 国名のみ</label>
-  <label><input type="radio" name="dict" value="capital"> 首都のみ</label>
-  <label><input type="radio" name="dict" value="both"> 両方</label>
+<div class="card">
+    <input id="pattern" type="text" placeholder="例：〇メ〇〇 / 1〇1〇">
 </div>
 
-<label><input type="checkbox" id="shiritori"> しりとりモード（複数連結）</label>
-<br><br>
+<div class="card">
+    <div>辞書を選択：</div>
+    <div class="dict-select">
+        <label class="dict-option selected" id="opt-country">
+            <input type="radio" name="dict" value="country" checked> 国名
+        </label>
+        <label class="dict-option" id="opt-capital">
+            <input type="radio" name="dict" value="capital"> 首都
+        </label>
+        <label class="dict-option" id="opt-both">
+            <input type="radio" name="dict" value="both"> 両方
+        </label>
+    </div>
 
-<button onclick="runSolve()">解く</button>
+    <div class="switch">
+        <input type="checkbox" id="shiritori">
+        <label for="shiritori">しりとりモード（複数連結）</label>
+    </div>
 
-<pre id="result"></pre>
+    <button onclick="runSolve()">解く</button>
+</div>
 
-<!-- 辞書 -->
+<div class="card">
+    <pre id="result">ここに結果が表示されます</pre>
+</div>
+
 <script src="dictionary.js"></script>
 
 <script>
+// 辞書選択の見た目切り替え
+document.querySelectorAll(".dict-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+        document.querySelectorAll(".dict-option").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+    });
+});
+
 // ===============================
 // ひらがな → カタカナ
 // ===============================
@@ -91,7 +225,7 @@ function matchPattern(pattern, word) {
 }
 
 // ===============================
-// しりとり連結生成（最大3語）
+// しりとり連結生成
 // ===============================
 function generateShiritoriChains(list, maxLength = 3) {
     const results = [];
@@ -130,7 +264,6 @@ function solvePattern(inputPattern, shiritoriMode, dictMode) {
     let candidates = [];
 
     if (shiritoriMode) {
-        // しりとり連結（複数語OK）
         const chains = generateShiritoriChains(list, 4);
         for (const chain of chains) {
             const joined = chain.join("");
@@ -139,7 +272,6 @@ function solvePattern(inputPattern, shiritoriMode, dictMode) {
             }
         }
     } else {
-        // 単語単体のみ（クラッシュ防止）
         for (const w of list) {
             if (matchPattern(pattern, w)) {
                 candidates.push([w]);
@@ -156,7 +288,6 @@ function solvePattern(inputPattern, shiritoriMode, dictMode) {
 function runSolve() {
     const p = document.getElementById("pattern").value;
     const s = document.getElementById("shiritori").checked;
-
     const dictMode = document.querySelector("input[name=dict]:checked").value;
 
     const res = solvePattern(p, s, dictMode);
