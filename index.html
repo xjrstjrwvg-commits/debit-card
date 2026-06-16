@@ -2,8 +2,17 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+
+<!-- 📱 ダブルタップ拡大防止 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
 <title>国名スプリントシャウト・ソルバー</title>
+
 <style>
+html, body {
+    touch-action: manipulation; /* ダブルタップ拡大防止 */
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     padding: 20px;
@@ -36,6 +45,14 @@ input[type="text"] {
     border: 1px solid #ccc;
     box-sizing: border-box;
     transition: 0.3s;
+}
+
+/* ✔ チェックボックスを大きくする */
+input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    transform: scale(1.4);
+    margin-right: 6px;
 }
 
 button {
@@ -91,7 +108,7 @@ pre {
     transition: 0.3s;
 }
 
-/* 🌙 ダークモード（OS設定を尊重） */
+/* 🌙 ダークモード対応 */
 @media (prefers-color-scheme: dark) {
     body {
         background: #111;
@@ -156,6 +173,7 @@ pre {
     <pre id="result">ここに結果が表示されます</pre>
 </div>
 
+<!-- 辞書 -->
 <script src="dictionary.js"></script>
 
 <script>
