@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>国名スプリントシャウト・ソルバー</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+input { font-size: 20px; width: 300px; }
+button { font-size: 18px; }
+pre { background: #f0f0f0; padding: 10px; }
+</style>
+</head>
+<body>
+
+<h2>国名スプリントシャウト・ソルバー</h2>
+
+<input id="pattern" placeholder="例：〇メ〇〇 / 1〇1〇">
+<label><input type="checkbox" id="shiritori"> しりとりモード</label>
+<button onclick="runSolve()">解く</button>
+
+<pre id="result"></pre>
+
+<script>
+// ===============================
+// 国名辞書（カタカナ）
+// ===============================
+const COUNTRIES = [
+    "アメリカ","カナダ","メキシコ","ブラジル","アルゼンチン",
+    "イギリス","フランス","ドイツ","イタリア","スペイン",
+    "ロシア","ウクライナ","トルコ","インド","パキスタン",
+    "リベリア","エジプト","ケニア","ナイジェリア","南アフリカ",
+    "オーストラリア","ニュージーランド","中国","韓国","日本"
+];
+
+// ===============================
+// ひらがな → カタカナ
+// ===============================
+function hiraToKata(str) {
+    return str.replace(/[\u3041-\u3096]/g, ch =>
+        String.fromCharCode(ch.charCodeAt(0) + 0x60)
+    );
+}
+
+// ===============================
+// 半角カナ → 全角カナ
+// ===============================
+function hankanaToZenkana(str) {
+    return str.replace(/[\uff61-\uff9f]/g, ch =>
+        String.fromCharCode(ch.charCodeAt(0) + 0x60)
+    );
+}
+
+// ===============================
+// 入力正規化
+// ===============================
+function normalizeInput(str) {
+    str = hankanaToZenkana(str);
+    str = hiraToKata(str);
+    return str;
+}
+
+// ===============================
+// パターン一致判定
+// ===============================
+function matchPattern(pattern, word) {
+    if (pattern.length !== word.length) return false;
+
+    const mapNumToChar = {};
+    const usedChars = {};
+
+    for (let i = 0; i < pattern.length; i++) {
+        const p = pattern[i];
+        const w = word[i];
+
+        if (p === "〇") continue;
+
+        if (/[0-9]/.test(p)) {
+            if (!mapNumToChar[p]) {
+                if (usedChars[w] && usedChars[w] !== p) return false;
+                mapNumToChar[p] = w;
+                usedChars[w] = p;
+            } else {
+                if (mapNumToChar[p] !== w) return false;
+            }
+        } else {
+            if (p !== w) return false;
+        }
+    }
+    return true;
+}
+
+// ===============================
+// しりとり連結生成
+// ===============================
+function generateShiritoriChains(maxLength = 3) {
+    const results = [];
+
+    function dfs(chain, lastChar) {
+        if (chain.length >= maxLength) return;
+
+        for (const c of COUNTRIES) {
+            if (lastChar && !c.startsWith(lastChar)) continue;
+
+            const newChain = [...chain, c];
+            results.push(newChain);
+
+            dfs(newChain, c[c.length - 1]);
+        }
+    }
+
+    for (const c of COUNTRIES) {
+        dfs([c], c[c.length - 1]);
+    }
+
+    return results;
+}
+
+// ===============================
+// ソルバー本体
+// ===============================
+function solvePattern(inputPattern, shiritoriMode = false) {
+    const pattern = normalizeInput(inputPattern);
+    let candidates = [];
+
+    if (!shiritoriMode) {
+        for (const c of COUNTRIES) {
+            if (matchPattern(pattern, c)) {
+                candidates.push([c]);
+            }
+        }
+    } else {
+        const chains = generateShiritoriChains(4);
+        for (const chain of chains) {
+            const joined = chain.join("");
+            if (joined.length === pattern.length && matchPattern(pattern, joined)) {
+                candidates.push(chain);
+            }
+        }
+    }
+
+    return candidates;
+}
+
+// ===============================
+// UI
+// ===============================
+function runSolve() {
+    const p = document.getElementById("pattern").value;
+    const s = document.getElementById("shiritori").checked;
+
+    const res = solvePattern(p, s);
+
+    if (res.length === 0) {
+        document.getElementById("result").textContent = "一致なし";
+        return;
+    }
+
+    let out = "";
+    for (const chain of res) {
+        out += chain.join(" → ") + "\n";
+    }
+    document.getElementById("result").textContent = out;
+}
+</script>
+
+</body>
+</html>
