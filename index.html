@@ -20,18 +20,9 @@ pre { background: #f0f0f0; padding: 10px; }
 
 <pre id="result"></pre>
 
-<script>
-// ===============================
-// 国名辞書（カタカナ）
-// ===============================
-const COUNTRIES = [
-    "アメリカ","カナダ","メキシコ","ブラジル","アルゼンチン",
-    "イギリス","フランス","ドイツ","イタリア","スペイン",
-    "ロシア","ウクライナ","トルコ","インド","パキスタン",
-    "リベリア","エジプト","ケニア","ナイジェリア","南アフリカ",
-    "オーストラリア","ニュージーランド","中国","韓国","日本"
-];
+<script src="dictionary.js"></script>
 
+<script>
 // ===============================
 // ひらがな → カタカナ
 // ===============================
@@ -92,13 +83,13 @@ function matchPattern(pattern, word) {
 // ===============================
 // しりとり連結生成
 // ===============================
-function generateShiritoriChains(maxLength = 3) {
+function generateShiritoriChains(list, maxLength = 3) {
     const results = [];
 
     function dfs(chain, lastChar) {
         if (chain.length >= maxLength) return;
 
-        for (const c of COUNTRIES) {
+        for (const c of list) {
             if (lastChar && !c.startsWith(lastChar)) continue;
 
             const newChain = [...chain, c];
@@ -108,10 +99,28 @@ function generateShiritoriChains(maxLength = 3) {
         }
     }
 
-    for (const c of COUNTRIES) {
+    for (const c of list) {
         dfs([c], c[c.length - 1]);
     }
 
+    return results;
+}
+
+// ===============================
+// ランダム連結（しりとりOFF用）
+// ===============================
+function generateRandomChains(list, maxLength = 3) {
+    const results = [];
+
+    for (const a of list) {
+        results.push([a]);
+        for (const b of list) {
+            results.push([a, b]);
+            for (const c of list) {
+                results.push([a, b, c]);
+            }
+        }
+    }
     return results;
 }
 
@@ -120,16 +129,21 @@ function generateShiritoriChains(maxLength = 3) {
 // ===============================
 function solvePattern(inputPattern, shiritoriMode = false) {
     const pattern = normalizeInput(inputPattern);
+
+    const list = [...window.DICT.country, ...window.DICT.capital];
+
     let candidates = [];
 
-    if (!shiritoriMode) {
-        for (const c of COUNTRIES) {
-            if (matchPattern(pattern, c)) {
-                candidates.push([c]);
+    if (shiritoriMode) {
+        const chains = generateShiritoriChains(list, 4);
+        for (const chain of chains) {
+            const joined = chain.join("");
+            if (joined.length === pattern.length && matchPattern(pattern, joined)) {
+                candidates.push(chain);
             }
         }
     } else {
-        const chains = generateShiritoriChains(4);
+        const chains = generateRandomChains(list, 3);
         for (const chain of chains) {
             const joined = chain.join("");
             if (joined.length === pattern.length && matchPattern(pattern, joined)) {
