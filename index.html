@@ -7,7 +7,7 @@
 body { font-family: sans-serif; padding: 20px; }
 input { font-size: 20px; width: 300px; }
 button { font-size: 18px; }
-pre { background: #f0f0f0; padding: 10px; }
+pre { background: #f0f0f0; padding: 10px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -15,12 +15,21 @@ pre { background: #f0f0f0; padding: 10px; }
 <h2>国名スプリントシャウト・ソルバー</h2>
 
 <input id="pattern" placeholder="例：〇メ〇〇 / 1〇1〇">
-<label><input type="checkbox" id="shiritori"> しりとりモード</label>
+
+<div>
+  <label><input type="radio" name="dict" value="country" checked> 国名のみ</label>
+  <label><input type="radio" name="dict" value="capital"> 首都のみ</label>
+  <label><input type="radio" name="dict" value="both"> 両方</label>
+</div>
+
+<label><input type="checkbox" id="shiritori"> しりとりモード（複数連結）</label>
+<br><br>
+
 <button onclick="runSolve()">解く</button>
 
 <pre id="result"></pre>
 
-<!-- 🔥 辞書を先に読み込む -->
+<!-- 辞書 -->
 <script src="dictionary.js"></script>
 
 <script>
@@ -82,7 +91,7 @@ function matchPattern(pattern, word) {
 }
 
 // ===============================
-// しりとり連結生成
+// しりとり連結生成（最大3語）
 // ===============================
 function generateShiritoriChains(list, maxLength = 3) {
     const results = [];
@@ -108,34 +117,20 @@ function generateShiritoriChains(list, maxLength = 3) {
 }
 
 // ===============================
-// ランダム連結（しりとりOFF）
-// ===============================
-function generateRandomChains(list, maxLength = 3) {
-    const results = [];
-
-    for (const a of list) {
-        results.push([a]);
-        for (const b of list) {
-            results.push([a, b]);
-            for (const c of list) {
-                results.push([a, b, c]);
-            }
-        }
-    }
-    return results;
-}
-
-// ===============================
 // ソルバー本体
 // ===============================
-function solvePattern(inputPattern, shiritoriMode = false) {
+function solvePattern(inputPattern, shiritoriMode, dictMode) {
     const pattern = normalizeInput(inputPattern);
 
-    const list = [...window.DICT.country, ...window.DICT.capital];
+    let list = [];
+    if (dictMode === "country") list = window.DICT.country;
+    if (dictMode === "capital") list = window.DICT.capital;
+    if (dictMode === "both") list = [...window.DICT.country, ...window.DICT.capital];
 
     let candidates = [];
 
     if (shiritoriMode) {
+        // しりとり連結（複数語OK）
         const chains = generateShiritoriChains(list, 4);
         for (const chain of chains) {
             const joined = chain.join("");
@@ -144,11 +139,10 @@ function solvePattern(inputPattern, shiritoriMode = false) {
             }
         }
     } else {
-        const chains = generateRandomChains(list, 3);
-        for (const chain of chains) {
-            const joined = chain.join("");
-            if (joined.length === pattern.length && matchPattern(pattern, joined)) {
-                candidates.push(chain);
+        // 単語単体のみ（クラッシュ防止）
+        for (const w of list) {
+            if (matchPattern(pattern, w)) {
+                candidates.push([w]);
             }
         }
     }
@@ -163,7 +157,9 @@ function runSolve() {
     const p = document.getElementById("pattern").value;
     const s = document.getElementById("shiritori").checked;
 
-    const res = solvePattern(p, s);
+    const dictMode = document.querySelector("input[name=dict]:checked").value;
+
+    const res = solvePattern(p, s, dictMode);
 
     if (res.length === 0) {
         document.getElementById("result").textContent = "一致なし";
