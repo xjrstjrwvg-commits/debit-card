@@ -2,329 +2,122 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-
-<!-- 📱 ダブルタップ拡大防止 -->
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
-<title>国名スプリントシャウト・ソルバー</title>
+<title>国名アナグラム検索</title>
 
 <style>
-html, body {
-    touch-action: manipulation; /* ダブルタップ拡大防止 */
+body{
+    font-family:sans-serif;
+    max-width:800px;
+    margin:auto;
+    padding:20px;
 }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    padding: 20px;
-    background: #fafafa;
-    color: #333;
-    max-width: 600px;
-    margin: auto;
-    transition: 0.3s;
+input{
+    width:300px;
+    padding:8px;
 }
 
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
+button{
+    padding:8px 12px;
 }
 
-.card {
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-    transition: 0.3s;
-}
-
-input[type="text"] {
-    width: 100%;
-    font-size: 22px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    transition: 0.3s;
-}
-
-/* ✔ チェックボックスを大きくする */
-input[type="checkbox"] {
-    width: 24px;
-    height: 24px;
-    transform: scale(1.4);
-    margin-right: 6px;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    font-size: 20px;
-    border: none;
-    border-radius: 8px;
-    background: #007aff;
-    color: white;
-    margin-top: 10px;
-    transition: 0.3s;
-}
-
-.dict-select {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.dict-option {
-    flex: 1;
-    background: #f0f0f0;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    border: 2px solid transparent;
-    transition: 0.3s;
-}
-
-.dict-option input {
-    margin-right: 6px;
-}
-
-.dict-option.selected {
-    border-color: #007aff;
-    background: #e8f0ff;
-}
-
-.switch {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-pre {
-    background: #fff;
-    padding: 16px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-    border: 1px solid #ddd;
-    transition: 0.3s;
-}
-
-/* 🌙 ダークモード対応 */
-@media (prefers-color-scheme: dark) {
-    body {
-        background: #111;
-        color: #fff;
-    }
-    .card {
-        background: #1e1e1e;
-        box-shadow: 0 2px 6px rgba(255,255,255,0.05);
-    }
-    input[type="text"] {
-        background: #2a2a2a;
-        border: 1px solid #555;
-        color: #fff;
-    }
-    .dict-option {
-        background: #2a2a2a;
-        color: #fff;
-    }
-    .dict-option.selected {
-        background: #003f7f;
-        border-color: #4da3ff;
-    }
-    pre {
-        background: #222;
-        border-color: #444;
-        color: #fff;
-    }
+#result{
+    margin-top:20px;
 }
 </style>
 </head>
 <body>
 
-<h2>国名スプリントシャウト・ソルバー</h2>
+<h2>国名アナグラム検索</h2>
 
-<div class="card">
-    <input id="pattern" type="text" placeholder="例：〇メ〇〇 / 1〇1〇">
-</div>
+<input id="word" placeholder="ひらがな入力">
 
-<div class="card">
-    <div>辞書を選択：</div>
-    <div class="dict-select">
-        <label class="dict-option selected" id="opt-country">
-            <input type="radio" name="dict" value="country" checked> 国名
-        </label>
-        <label class="dict-option" id="opt-capital">
-            <input type="radio" name="dict" value="capital"> 首都
-        </label>
-        <label class="dict-option" id="opt-both">
-            <input type="radio" name="dict" value="both"> 両方
-        </label>
-    </div>
+<button id="search">
+検索
+</button>
 
-    <div class="switch">
-        <input type="checkbox" id="shiritori">
-        <label for="shiritori">しりとりモード（複数連結）</label>
-    </div>
+<label>
+<input type="checkbox" id="shiritori">
+しりとり可能のみ
+</label>
 
-    <button onclick="runSolve()">解く</button>
-</div>
-
-<div class="card">
-    <pre id="result">ここに結果が表示されます</pre>
-</div>
-
-<!-- 辞書 -->
-<script src="dictionary.js"></script>
+<div id="result"></div>
 
 <script>
-// 辞書選択の見た目切り替え
-document.querySelectorAll(".dict-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-        document.querySelectorAll(".dict-option").forEach(o => o.classList.remove("selected"));
-        opt.classList.add("selected");
+
+let countryMap={};
+
+function kataToHira(str){
+    return str.replace(
+        /[\u30a1-\u30f6]/g,
+        s=>String.fromCharCode(
+            s.charCodeAt(0)-0x60
+        )
+    );
+}
+
+function makeKey(str){
+    return kataToHira(str)
+        .replace(/ー/g,"")
+        .split("")
+        .sort()
+        .join("");
+}
+
+async function init(){
+
+    const countries=await fetch(
+        "countries.json"
+    ).then(r=>r.json());
+
+    countries.forEach(country=>{
+
+        const key=makeKey(country);
+
+        if(!countryMap[key]){
+            countryMap[key]=[];
+        }
+
+        countryMap[key].push(country);
+
     });
-});
 
-// ===============================
-// ひらがな → カタカナ
-// ===============================
-function hiraToKata(str) {
-    return str.replace(/[\u3041-\u3096]/g, ch =>
-        String.fromCharCode(ch.charCodeAt(0) + 0x60)
-    );
 }
 
-// ===============================
-// 半角カナ → 全角カナ
-// ===============================
-function hankanaToZenkana(str) {
-    return str.replace(/[\uff61-\uff9f]/g, ch =>
-        String.fromCharCode(ch.charCodeAt(0) + 0x60)
-    );
-}
+document
+.getElementById("search")
+.onclick=()=>{
 
-// ===============================
-// 入力正規化
-// ===============================
-function normalizeInput(str) {
-    str = hankanaToZenkana(str);
-    str = hiraToKata(str);
-    return str;
-}
+    const word=document
+        .getElementById("word")
+        .value
+        .trim();
 
-// ===============================
-// パターン一致判定
-// ===============================
-function matchPattern(pattern, word) {
-    if (pattern.length !== word.length) return false;
+    const key=makeKey(word);
 
-    const mapNumToChar = {};
-    const usedChars = {};
+    let results=
+        countryMap[key]||[];
 
-    for (let i = 0; i < pattern.length; i++) {
-        const p = pattern[i];
-        const w = word[i];
-
-        if (p === "〇") continue;
-
-        if (/[0-9]/.test(p)) {
-            if (!mapNumToChar[p]) {
-                if (usedChars[w] && usedChars[w] !== p) return false;
-                mapNumToChar[p] = w;
-                usedChars[w] = p;
-            } else {
-                if (mapNumToChar[p] !== w) return false;
-            }
-        } else {
-            if (p !== w) return false;
-        }
-    }
-    return true;
-}
-
-// ===============================
-// しりとり連結生成（同じ国は使わない）
-// ===============================
-function generateShiritoriChains(list, maxLength = 3) {
-    const results = [];
-
-    function dfs(chain, lastChar) {
-        if (chain.length >= maxLength) return;
-
-        for (const c of list) {
-            // ★ 同じ国・首都の再利用禁止
-            if (chain.includes(c)) continue;
-
-            // ★ しりとり条件
-            if (lastChar && !c.startsWith(lastChar)) continue;
-
-            const newChain = [...chain, c];
-            results.push(newChain);
-
-            dfs(newChain, c[c.length - 1]);
-        }
+    if(
+        document.getElementById("shiritori")
+        .checked
+    ){
+        results=results.filter(
+            c=>!c.endsWith("ン")
+        );
     }
 
-    for (const c of list) {
-        dfs([c], c[c.length - 1]);
-    }
+    document.getElementById(
+        "result"
+    ).innerHTML=
+        results.length
+        ? results.join("<br>")
+        : "候補なし";
 
-    return results;
-}
+};
 
-// ===============================
-// ソルバー本体
-// ===============================
-function solvePattern(inputPattern, shiritoriMode, dictMode) {
-    const pattern = normalizeInput(inputPattern);
+init();
 
-    let list = [];
-    if (dictMode === "country") list = window.DICT.country;
-    if (dictMode === "capital") list = window.DICT.capital;
-    if (dictMode === "both") list = [...window.DICT.country, ...window.DICT.capital];
-
-    let candidates = [];
-
-    if (shiritoriMode) {
-        const chains = generateShiritoriChains(list, 4);
-        for (const chain of chains) {
-            const joined = chain.join("");
-            if (joined.length === pattern.length && matchPattern(pattern, joined)) {
-                candidates.push(chain);
-            }
-        }
-    } else {
-        for (const w of list) {
-            if (matchPattern(pattern, w)) {
-                candidates.push([w]);
-            }
-        }
-    }
-
-    return candidates;
-}
-
-// ===============================
-// UI
-// ===============================
-function runSolve() {
-    const p = document.getElementById("pattern").value;
-    const s = document.getElementById("shiritori").checked;
-    const dictMode = document.querySelector("input[name=dict]:checked").value;
-
-    const res = solvePattern(p, s, dictMode);
-
-    if (res.length === 0) {
-        document.getElementById("result").textContent = "一致なし";
-        return;
-    }
-
-    let out = "";
-    for (const chain of res) {
-        out += chain.join(" → ") + "\n";
-    }
-    document.getElementById("result").textContent = out;
-}
 </script>
 
 </body>
