@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -123,6 +124,7 @@
 
   <div class="panel">
     <label for="inputText">文字を入力</label>
+
     <input
       type="text"
       id="inputText"
@@ -169,9 +171,9 @@
     function normalize(text) {
       return Array.from(text)
         .map(ch => {
-          // カタカナをひらがなに変換
           const code = ch.charCodeAt(0);
 
+          // カタカナをひらがなに変換
           if (code >= 0x30A1 && code <= 0x30F6) {
             ch = String.fromCharCode(code - 0x60);
           }
@@ -225,7 +227,8 @@
       const results = [];
 
       function dfs(start, remaining, chosen) {
-        if (remaining === 0) {
+        // すべての文字を使い切ったら完成
+        if (Object.values(remaining).every(count => count === 0)) {
           results.push([...chosen]);
           return;
         }
@@ -266,6 +269,7 @@
         const last = chain[chain.length - 1];
         const lastChar = Array.from(last).pop();
 
+        // 長音は接続に使わない
         if (lastChar === "ー") {
           return null;
         }
@@ -302,6 +306,16 @@
       return null;
     }
 
+    // コピー処理
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました！");
+      } catch (error) {
+        alert("コピーできませんでした。");
+      }
+    }
+
     // 検索結果の表示
     function displayResults(results) {
       const resultArea = document.getElementById("result");
@@ -320,7 +334,9 @@
       copyAll.textContent = "すべてコピー";
 
       copyAll.addEventListener("click", () => {
-        copyText(results.map(words => words.join(" ")).join("\n"));
+        copyText(
+          results.map(words => words.join(" ")).join("\n")
+        );
       });
 
       resultArea.replaceChildren(count, copyAll);
@@ -346,16 +362,6 @@
       });
     }
 
-    // コピー処理
-    async function copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        alert("コピーしました！");
-      } catch (error) {
-        alert("コピーできませんでした。");
-      }
-    }
-
     // 検索実行
     function search() {
       const input = document.getElementById("inputText").value.trim();
@@ -366,7 +372,8 @@
         return;
       }
 
-      if (!window.COUNTRY_NAMES) {
+      if (!window.COUNTRY_NAMES ||
+          window.COUNTRY_NAMES.length === 0) {
         document.getElementById("result").textContent =
           "dictionary.jsを読み込めませんでした。";
         return;
@@ -390,10 +397,12 @@
       displayResults(results);
     }
 
+    // ボタンで検索
     document
       .getElementById("searchButton")
       .addEventListener("click", search);
 
+    // Enterキーでも検索
     document
       .getElementById("inputText")
       .addEventListener("keydown", event => {
