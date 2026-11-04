@@ -1,497 +1,406 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>国名アナグラム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国名アナグラム検索</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
-      margin: 0;
-      padding: 24px 14px;
-      background: #f4f6fa;
-      color: #172033;
       font-family: sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f6f8;
+      color: #222;
     }
 
-    main {
-      max-width: 720px;
-      margin: auto;
+    h1 {
+      font-size: 25px;
+      text-align: center;
     }
-
-    h1 { font-size: 28px; }
 
     .panel {
       background: white;
       padding: 20px;
-      border-radius: 14px;
-      border: 1px solid #ddd;
+      border-radius: 12px;
+      margin-bottom: 18px;
     }
 
-    textarea {
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
       width: 100%;
-      min-height: 110px;
       padding: 12px;
       font-size: 18px;
-      border: 1px solid #bbb;
-      border-radius: 9px;
-      resize: vertical;
+      border: 1px solid #ccc;
+      border-radius: 7px;
     }
 
-    .modes {
-      display: grid;
-      gap: 12px;
-      margin: 18px 0;
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      background: white;
     }
 
     button {
-      padding: 12px 17px;
+      padding: 11px 16px;
       border: none;
-      border-radius: 9px;
-      background: #2457d6;
+      border-radius: 7px;
+      background: #2563eb;
       color: white;
       font-size: 15px;
-      font-weight: bold;
       cursor: pointer;
     }
 
-    button:disabled {
-      opacity: .5;
+    button:active {
+      opacity: 0.7;
     }
 
-    .secondary {
-      background: #e9eef8;
-      color: #20304e;
+    .search-button {
+      width: 100%;
+      margin-top: 15px;
+      font-size: 17px;
     }
 
-    #status {
-      margin-top: 14px;
-      color: #64748b;
-      white-space: pre-wrap;
-    }
-
-    .result {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 14px;
-      margin: 10px 0;
-    }
-
-    .chain {
-      font-size: 18px;
-      font-weight: bold;
-      line-height: 1.8;
-      overflow-wrap: anywhere;
-    }
-
-    .copy-one {
-      margin-top: 9px;
-      padding: 8px 12px;
-      font-size: 13px;
-    }
-
-    .empty {
-      padding: 24px;
-      text-align: center;
-      background: white;
-      border: 1px dashed #aaa;
-      border-radius: 10px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .result-head {
+    .result-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 20px 0 12px;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
     }
 
-    .result-head h2 {
-      margin: 0;
-      font-size: 21px;
+    .result-text {
+      font-size: 17px;
+      overflow-wrap: anywhere;
+    }
+
+    .copy-button {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: #555;
+    }
+
+    .copy-all {
+      background: #16a34a;
+      margin-bottom: 12px;
+    }
+
+    #result {
+      margin-top: 15px;
+    }
+
+    .count {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
     }
 
     .hint {
-      color: #64748b;
+      color: #777;
       font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .actions {
-      display: flex;
-      gap: 9px;
-      flex-wrap: wrap;
+      margin-top: 7px;
     }
   </style>
 </head>
 
 <body>
-<main>
-  <h1>国名アナグラム</h1>
-  <p>ひらがなを並べ替えて国名に変換します。</p>
+  <h1>国名アナグラム検索</h1>
 
-  <section class="panel">
-    <label for="letters"><b>ひらがなを入力</b></label>
-
-    <textarea id="letters"
-      placeholder="例：ああうまいとりにはらいち"></textarea>
+  <div class="panel">
+    <label for="inputText">文字を入力</label>
+    <input
+      type="text"
+      id="inputText"
+      placeholder="例：アイスランド"
+      autocomplete="off"
+    >
 
     <p class="hint">
-      小さい文字は大きい文字に統一します。
-      濁点・半濁点は区別します。
-      「ー」は1文字として扱います。
+      ひらがな・カタカナのどちらでも入力できます。
     </p>
 
-    <div class="modes">
-      <label>
-        <input type="radio" name="mode" value="all" checked>
-        すべての組み合わせ
-      </label>
+    <label for="mode" style="margin-top: 18px;">
+      検索モード
+    </label>
 
-      <label>
-        <input type="radio" name="mode" value="shiritori">
-        しりとりが成立する組み合わせのみ
-      </label>
-    </div>
+    <select id="mode">
+      <option value="all">すべての組み合わせ</option>
+      <option value="shiritori">しりとりになる組み合わせのみ</option>
+    </select>
 
-    <div class="actions">
-      <button id="search">検索</button>
-      <button id="clear" class="secondary">クリア</button>
-    </div>
+    <button class="search-button" id="searchButton">
+      検索する
+    </button>
+  </div>
 
-    <p id="status" aria-live="polite"></p>
-  </section>
+  <div class="panel">
+    <label>検索結果</label>
+    <div id="result">ここに結果が表示されます。</div>
+  </div>
 
-  <section id="results"></section>
-</main>
+  <script src="dictionary.js"></script>
 
-<script src="dictionary.js"></script>
+  <script>
+    // 小さい文字を大きい文字に変換
+    const smallToLarge = {
+      "ぁ": "あ", "ぃ": "い", "ぅ": "う",
+      "ぇ": "え", "ぉ": "お",
+      "ゃ": "や", "ゅ": "ゆ", "ょ": "よ",
+      "っ": "つ", "ゎ": "わ",
+      "ゕ": "か", "ゖ": "け"
+    };
 
-<script>
-(() => {
-  "use strict";
+    // 文字の正規化
+    function normalize(text) {
+      return Array.from(text)
+        .map(ch => {
+          // カタカナをひらがなに変換
+          const code = ch.charCodeAt(0);
 
-  const input = document.getElementById("letters");
-  const status = document.getElementById("status");
-  const results = document.getElementById("results");
-  const searchButton = document.getElementById("search");
+          if (code >= 0x30A1 && code <= 0x30F6) {
+            ch = String.fromCharCode(code - 0x60);
+          }
 
-  const smallToLarge = {
-    "ぁ":"あ", "ぃ":"い", "ぅ":"う",
-    "ぇ":"え", "ぉ":"お", "ゃ":"や",
-    "ゅ":"ゆ", "ょ":"よ", "っ":"つ",
-    "ゎ":"わ", "ゕ":"か", "ゖ":"け"
-  };
-
-  // 文字の正規化
-  function normalize(text) {
-    return Array.from(text)
-      .map(ch => smallToLarge[ch] || ch)
-      .join("");
-  }
-
-  // 文字ごとの出現回数
-  function countChars(text) {
-    const counts = new Map();
-
-    for (const ch of text) {
-      counts.set(ch, (counts.get(ch) || 0) + 1);
+          // 小さい文字を大きくする
+          return smallToLarge[ch] || ch;
+        })
+        .join("");
     }
 
-    return counts;
-  }
+    // 文字の出現回数を数える
+    function countCharacters(text) {
+      const counts = {};
 
-  // 文字が足りているか確認
-  function canSubtract(source, target) {
-    for (const [ch, amount] of target) {
-      if ((source.get(ch) || 0) < amount) {
-        return false;
+      for (const ch of text) {
+        counts[ch] = (counts[ch] || 0) + 1;
+      }
+
+      return counts;
+    }
+
+    // 文字列が残りの文字で作れるか確認
+    function canUse(word, counts) {
+      const needed = countCharacters(word);
+
+      for (const ch in needed) {
+        if ((counts[ch] || 0) < needed[ch]) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // 文字を使用する
+    function useWord(word, counts, amount) {
+      for (const ch of word) {
+        counts[ch] += amount;
       }
     }
 
-    return true;
-  }
+    // すべての組み合わせを検索
+    function findCombinations(input) {
+      const target = normalize(input);
+      const targetCounts = countCharacters(target);
 
-  // 文字を引く
-  function subtract(source, target) {
-    const next = new Map(source);
+      const countries = [...new Set(
+        (window.COUNTRY_NAMES || []).map(normalize)
+      )];
 
-    for (const [ch, amount] of target) {
-      const left = next.get(ch) - amount;
+      const results = [];
 
-      if (left) next.set(ch, left);
-      else next.delete(ch);
-    }
-
-    return next;
-  }
-
-  // 辞書を読み込む
-  const countries = (window.COUNTRY_NAMES || [])
-    .map((name, index) => {
-      const reading = normalize(name);
-
-      return {
-        name,
-        reading,
-        index,
-        length: Array.from(reading).length,
-        counts: countChars(reading)
-      };
-    })
-    .filter(c => c.length > 0);
-
-  // アナグラムの全組み合わせを検索
-  function findCombinations(target) {
-    const found = [];
-    const targetLength = Array.from(target).length;
-    const targetCounts = countChars(target);
-
-    const usable = countries.filter(c =>
-      c.length <= targetLength &&
-      canSubtract(targetCounts, c.counts)
-    );
-
-    function dfs(start, remaining, remainingLength, chosen) {
-      if (remainingLength === 0) {
-        found.push(chosen.slice());
-        return;
-      }
-
-      for (let i = start; i < usable.length; i++) {
-        const country = usable[i];
-
-        if (country.length > remainingLength) continue;
-        if (!canSubtract(remaining, country.counts)) continue;
-
-        const next = subtract(remaining, country.counts);
-
-        dfs(
-          i + 1,
-          next,
-          remainingLength - country.length,
-          [...chosen, country]
-        );
-      }
-    }
-
-    dfs(0, targetCounts, targetLength, []);
-
-    return found;
-  }
-
-  // しりとりの並び順を検索
-  function findShiritoriOrders(group) {
-    const orders = [];
-    const used = new Array(group.length).fill(false);
-    const path = [];
-
-    function visit() {
-      if (path.length === group.length) {
-        orders.push(path.slice());
-        return;
-      }
-
-      const previous = path[path.length - 1];
-
-      for (let i = 0; i < group.length; i++) {
-        if (used[i]) continue;
-
-        const current = group[i];
-
-        if (previous) {
-          const last = Array.from(previous.reading).at(-1);
-          const first = Array.from(current.reading)[0];
-
-          if (last === "ー" || last !== first) continue;
+      function dfs(start, remaining, chosen) {
+        if (remaining === 0) {
+          results.push([...chosen]);
+          return;
         }
 
-        used[i] = true;
-        path.push(current);
+        for (let i = start; i < countries.length; i++) {
+          const word = countries[i];
 
-        visit();
+          if (!canUse(word, remaining)) {
+            continue;
+          }
 
-        path.pop();
-        used[i] = false;
+          useWord(word, remaining, -1);
+          chosen.push(word);
+
+          dfs(i + 1, remaining, chosen);
+
+          chosen.pop();
+          useWord(word, remaining, 1);
+        }
       }
+
+      dfs(0, targetCounts, []);
+
+      return results;
     }
 
-    visit();
+    // しりとりになる順番を検索
+    function findShiritoriOrder(words) {
+      if (words.length <= 1) {
+        return [...words];
+      }
 
-    return orders;
-  }
+      function dfs(remaining, chain) {
+        if (remaining.length === 0) {
+          return chain;
+        }
 
-  // コピー処理
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      status.textContent = "コピーしました。";
-    } catch {
-      const area = document.createElement("textarea");
-      area.value = text;
-      document.body.appendChild(area);
-      area.select();
-      document.execCommand("copy");
-      area.remove();
+        const last = chain[chain.length - 1];
+        const lastChar = Array.from(last).pop();
 
-      status.textContent = "コピーしました。";
-    }
-  }
+        if (lastChar === "ー") {
+          return null;
+        }
 
-  // 結果を表示
-  function render(list) {
-    results.replaceChildren();
+        for (let i = 0; i < remaining.length; i++) {
+          const next = remaining[i];
 
-    // 解なしの場合
-    if (list.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "解なし";
-      results.appendChild(empty);
-      return;
-    }
+          if (lastChar !== Array.from(next)[0]) {
+            continue;
+          }
 
-    const heading = document.createElement("div");
-    heading.className = "result-head";
+          const rest = remaining.filter((_, index) => index !== i);
+          const result = dfs(rest, [...chain, next]);
 
-    const title = document.createElement("h2");
-    title.textContent = "検索結果";
-
-    const count = document.createElement("span");
-    count.textContent = `${list.length}件`;
-
-    heading.append(title, count);
-    results.appendChild(heading);
-
-    const allCopy = document.createElement("button");
-    allCopy.className = "secondary";
-    allCopy.textContent = "すべてコピー";
-
-    allCopy.addEventListener("click", () => {
-      copyText(
-        list.map(words =>
-          words.map(w => w.name).join(" ")
-        ).join("\n")
-      );
-    });
-
-    results.appendChild(allCopy);
-
-    for (const words of list) {
-      const item = document.createElement("div");
-      item.className = "result";
-
-      const chain = document.createElement("div");
-      chain.className = "chain";
-      chain.textContent = words.map(w => w.name).join(" ");
-
-      const copy = document.createElement("button");
-      copy.className = "secondary copy-one";
-      copy.textContent = "この結果をコピー";
-
-      copy.addEventListener("click", () => {
-        copyText(words.map(w => w.name).join(" "));
-      });
-
-      item.append(chain, copy);
-      results.appendChild(item);
-    }
-  }
-
-  // 検索実行
-  function runSearch() {
-    const target = normalize(
-      input.value.replace(/\s/g, "")
-    );
-
-    results.replaceChildren();
-
-    if (!target) {
-      status.textContent = "ひらがなを入力してください。";
-      return;
-    }
-
-    if (!/^[ぁ-ゖー]+$/.test(target)) {
-      status.textContent =
-        "ひらがなと「ー」だけを入力してください。";
-      return;
-    }
-
-    if (!countries.length) {
-      status.textContent =
-        "dictionary.jsを読み込めませんでした。";
-      return;
-    }
-
-    searchButton.disabled = true;
-    status.textContent = "検索中です…";
-
-    setTimeout(() => {
-      try {
-        const mode =
-          document.querySelector(
-            'input[name="mode"]:checked'
-          ).value;
-
-        const combinations = findCombinations(target);
-        let output = [];
-
-        if (mode === "all") {
-          output = combinations;
-        } else {
-          for (const group of combinations) {
-            output.push(...findShiritoriOrders(group));
+          if (result) {
+            return result;
           }
         }
 
-        render(output);
-
-        status.textContent =
-          output.length === 0
-            ? "検索が完了しました。"
-            : `${output.length}件見つかりました。`;
-
-      } catch (error) {
-        console.error(error);
-        status.textContent =
-          "検索中にエラーが発生しました。";
-      } finally {
-        searchButton.disabled = false;
+        return null;
       }
-    }, 20);
-  }
 
-  // ボタン
-  searchButton.addEventListener("click", runSearch);
+      for (let i = 0; i < words.length; i++) {
+        const first = words[i];
+        const rest = words.filter((_, index) => index !== i);
 
-  document.getElementById("clear")
-    .addEventListener("click", () => {
-      input.value = "";
-      results.replaceChildren();
-      status.textContent = "";
-      input.focus();
-    });
+        const result = dfs(rest, [first]);
 
-  // Ctrl / Command + Enter でも検索
-  input.addEventListener("keydown", event => {
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key === "Enter"
-    ) {
-      runSearch();
+        if (result) {
+          return result;
+        }
+      }
+
+      return null;
     }
-  });
 
-  // 初期表示
-  status.textContent = countries.length
-    ? `辞書読み込み完了：${countries.length}か国`
-    : "dictionary.jsを読み込めませんでした。";
+    // 検索結果の表示
+    function displayResults(results) {
+      const resultArea = document.getElementById("result");
 
-})();
-</script>
+      if (results.length === 0) {
+        resultArea.textContent = "解なし";
+        return;
+      }
+
+      const count = document.createElement("div");
+      count.className = "count";
+      count.textContent = `${results.length}件`;
+
+      const copyAll = document.createElement("button");
+      copyAll.className = "copy-all";
+      copyAll.textContent = "すべてコピー";
+
+      copyAll.addEventListener("click", () => {
+        copyText(results.map(words => words.join(" ")).join("\n"));
+      });
+
+      resultArea.replaceChildren(count, copyAll);
+
+      results.forEach(words => {
+        const item = document.createElement("div");
+        item.className = "result-item";
+
+        const text = document.createElement("span");
+        text.className = "result-text";
+        text.textContent = words.join(" ");
+
+        const button = document.createElement("button");
+        button.className = "copy-button";
+        button.textContent = "コピー";
+
+        button.addEventListener("click", () => {
+          copyText(words.join(" "));
+        });
+
+        item.append(text, button);
+        resultArea.appendChild(item);
+      });
+    }
+
+    // コピー処理
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました！");
+      } catch (error) {
+        alert("コピーできませんでした。");
+      }
+    }
+
+    // 検索実行
+    function search() {
+      const input = document.getElementById("inputText").value.trim();
+      const mode = document.getElementById("mode").value;
+
+      if (!input) {
+        alert("文字を入力してください。");
+        return;
+      }
+
+      if (!window.COUNTRY_NAMES) {
+        document.getElementById("result").textContent =
+          "dictionary.jsを読み込めませんでした。";
+        return;
+      }
+
+      const combinations = findCombinations(input);
+      let results = combinations;
+
+      if (mode === "shiritori") {
+        results = [];
+
+        for (const words of combinations) {
+          const ordered = findShiritoriOrder(words);
+
+          if (ordered) {
+            results.push(ordered);
+          }
+        }
+      }
+
+      displayResults(results);
+    }
+
+    document
+      .getElementById("searchButton")
+      .addEventListener("click", search);
+
+    document
+      .getElementById("inputText")
+      .addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          search();
+        }
+      });
+  </script>
 </body>
 </html>
