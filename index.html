@@ -2,121 +2,281 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>国名アナグラム検索</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>国名アナグラム</title>
 
 <style>
 body{
     font-family:sans-serif;
-    max-width:800px;
-    margin:auto;
-    padding:20px;
+    margin:15px;
 }
 
-input{
-    width:300px;
-    padding:8px;
+textarea{
+    width:100%;
+    height:80px;
+    font-size:18px;
 }
 
 button{
-    padding:8px 12px;
+    width:100%;
+    margin-top:10px;
+    padding:12px;
+    font-size:18px;
 }
 
-#result{
-    margin-top:20px;
+label{
+    display:block;
+    margin-top:10px;
+}
+
+.result{
+    margin-top:15px;
+}
+
+.answer{
+    margin-bottom:15px;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
 }
 </style>
 </head>
 <body>
 
-<h2>国名アナグラム検索</h2>
+<h2>国名アナグラム</h2>
 
-<input id="word" placeholder="ひらがな入力">
-
-<button id="search">
-検索
-</button>
+<textarea id="input"
+placeholder="ああうまいとりにはらいち"></textarea>
 
 <label>
 <input type="checkbox" id="shiritori">
 しりとり可能のみ
 </label>
 
-<div id="result"></div>
+<button onclick="search()">
+検索
+</button>
+
+<div id="result" class="result"></div>
 
 <script>
 
-let countryMap={};
+let countries=[];
 
-function kataToHira(str){
-    return str.replace(
-        /[\u30a1-\u30f6]/g,
+fetch("countries.json")
+.then(r=>r.json())
+.then(data=>{
+
+    countries=data.map(name=>({
+
+        name,
+
+        chars:charCount(
+            normalize(name)
+        )
+
+    }));
+
+});
+
+function normalize(str){
+
+    return str
+     .replace(/[ァ-ヶ]/g,
         s=>String.fromCharCode(
             s.charCodeAt(0)-0x60
         )
-    );
+     )
+     .replace(/ー/g,"")
+     .replace(/\s/g,"")
+     .toLowerCase();
+
 }
 
-function makeKey(str){
-    return kataToHira(str)
-        .replace(/ー/g,"")
-        .split("")
-        .sort()
-        .join("");
+function charCount(str){
+
+    const m={};
+
+    for(const c of str){
+
+        m[c]=(m[c]||0)+1;
+
+    }
+
+    return m;
+
 }
 
-async function init(){
+function canUse(pool,need){
 
-    const countries=await fetch(
-        "countries.json"
-    ).then(r=>r.json());
+    for(const k in need){
 
-    countries.forEach(country=>{
+        if((pool[k]||0)<need[k]){
 
-        const key=makeKey(country);
+            return false;
 
-        if(!countryMap[key]){
-            countryMap[key]=[];
         }
 
-        countryMap[key].push(country);
+    }
 
-    });
+    return true;
 
 }
 
-document
-.getElementById("search")
-.onclick=()=>{
+function subtract(pool,need){
 
-    const word=document
-        .getElementById("word")
-        .value
-        .trim();
+    const next={...pool};
 
-    const key=makeKey(word);
+    for(const k in need){
 
-    let results=
-        countryMap[key]||[];
+        next[k]-=need[k];
 
-    if(
-        document.getElementById("shiritori")
-        .checked
-    ){
-        results=results.filter(
-            c=>!c.endsWith("ン")
+        if(next[k]===0){
+
+            delete next[k];
+
+        }
+
+    }
+
+    return next;
+
+}
+
+function isEmpty(pool){
+
+    return Object.keys(pool).length===0;
+
+}
+
+function solve(pool,start,path,answers){
+
+    if(isEmpty(pool)){
+
+        answers.push([...path]);
+
+        return;
+    }
+
+    if(answers.length>=50){
+
+        return;
+    }
+
+    for(let i=start;i<countries.length;i++){
+
+        const c=countries[i];
+
+        if(!canUse(pool,c.chars)){
+
+            continue;
+
+        }
+
+        path.push(c.name);
+
+        solve(
+            subtract(pool,c.chars),
+            i,
+            path,
+            answers
+        );
+
+        path.pop();
+
+    }
+
+}
+
+function search(){
+
+    const input=
+        normalize(
+            document
+            .getElementById("input")
+            .value
+        );
+
+    const shiritori=
+        document
+        .getElementById("shiritori")
+        .checked;
+
+    const pool=
+        charCount(input);
+
+    let targetCountries=
+        countries;
+
+    if(shiritori){
+
+        targetCountries=
+        countries.filter(
+            c=>!c.name.endsWith("ン")
         );
     }
 
-    document.getElementById(
-        "result"
-    ).innerHTML=
-        results.length
-        ? results.join("<br>")
-        : "候補なし";
+    countries=targetCountries;
 
-};
+    const answers=[];
 
-init();
+    solve(
+        pool,
+        0,
+        [],
+        answers
+    );
+
+    countries=
+        window.__allCountries ||
+        countries;
+
+    const result=
+        document.getElementById("result");
+
+    if(answers.length===0){
+
+        result.innerHTML=
+        "<p>一致なし</p>";
+
+        return;
+    }
+
+    result.innerHTML=
+        "<p>"+answers.length+
+        "通り見つかりました</p>";
+
+    result.innerHTML+=answers
+    .map((a,i)=>`
+
+        <div class="answer">
+        <b>解 ${i+1}</b><br>
+        ${a.join(" → ")}
+        </div>
+
+    `).join("");
+
+}
+
+fetch("countries.json")
+.then(r=>r.json())
+.then(data=>{
+
+    window.__allCountries=
+    data.map(name=>({
+
+        name,
+
+        chars:charCount(
+            normalize(name)
+        )
+
+    }));
+
+    countries=
+    window.__allCountries;
+
+});
 
 </script>
 
